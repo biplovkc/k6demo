@@ -13,24 +13,28 @@ export const options = {
     },
     scenarios: {
         test: {
-            executor: "constant-arrival-rate",
-            rate: 10,
-            timeUnit: "1s",
-            duration: "30s",
-            preAllocatedVUs: 1,
-            maxVUs: 10
-        },
-        foo: {
-            executor: "constant-arrival-rate",
-            rate: 15,
-            exec: "foo",
-            timeUnit: "2s",
-            duration: "10s",
-            preAllocatedVUs: 1,
-            maxVUs: 10,
+            executor: "ramping-vus",
+            startVUs: 1,
+            stages: [
+                {
+                    duration: "30s",
+                    target: 5, // normal load
+                },
+                {
+                    duration: "10s",
+                    target: 20, //spike to 15 vus
+                },
+                {
+                    duration: "10s",
+                    target: 40,
+                },
+                {
+                    duration: "10s",
+                    target: 50
+                }
+            ]
         },
     },
-    vus:10,
     thresholds: {
         failed_requests: ['rate<=0'],
         http_req_duration: ['p(95)<100', 'p(99)<500'],
@@ -41,13 +45,6 @@ export default function () {
     const result = http.get("http://test-api.k6.io");
 
     checkResult(result, "default", 200);
-    failures.add(result.status != 200);
-}
-
-export function foo () {
-    const result = http.get("http://test-api.k6.io");
-
-    checkResult(result, "foo", 200);
     failures.add(result.status != 200);
 }
 
